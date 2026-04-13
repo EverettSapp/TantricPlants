@@ -123,14 +123,73 @@ function PlantBucket({
   );
 }
 
+type Plot = {
+  id: number;
+  name: string;
+  plot_type: "seeding_tray" | "raised_bed" | "in_ground";
+  tray_rows: number | null;
+  tray_cols: number | null;
+  length_ft: number | null;
+  width_ft: number | null;
+  height_in: number | null;
+};
+
+const PLOT_ICONS = { seeding_tray: "🌱", raised_bed: "🪵", in_ground: "🌍" };
+const PLOT_LABELS = { seeding_tray: "Seeding tray", raised_bed: "Raised bed", in_ground: "In ground" };
+
+function PlotSection({ plots, loading }: { plots: Plot[]; loading: boolean }) {
+  return (
+    <div className="mt-6 pt-6 border-t border-stone-200">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Plots & Trays</h3>
+        <Link href="/plots/new" className="text-xs text-green-700 hover:underline">+ Add plot</Link>
+      </div>
+      {loading ? (
+        <div className="text-stone-400 text-sm">Loading...</div>
+      ) : plots.length === 0 ? (
+        <Link href="/plots/new" className="block border-2 border-dashed border-stone-200 rounded-xl p-4 text-center text-stone-400 hover:border-green-300 transition-colors">
+          <p className="text-2xl mb-1">🗺️</p>
+          <p className="text-xs">Plan your garden — add a tray or bed</p>
+        </Link>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {plots.map((p) => (
+            <Link key={p.id} href={`/plots/${p.id}`}
+              className="bg-white border border-stone-200 rounded-lg px-3 py-2.5 hover:border-green-400 hover:shadow-sm transition-all group"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{PLOT_ICONS[p.plot_type]}</span>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate group-hover:text-green-800">{p.name}</p>
+                  <p className="text-xs text-stone-400">
+                    {PLOT_LABELS[p.plot_type]}
+                    {p.plot_type === "seeding_tray" && p.tray_rows && p.tray_cols &&
+                      ` · ${p.tray_rows * p.tray_cols} cells`}
+                    {(p.plot_type === "raised_bed" || p.plot_type === "in_ground") && p.length_ft && p.width_ft &&
+                      ` · ${p.length_ft}×${p.width_ft} ft`}
+                  </p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [plants, setPlants] = useState<Plant[]>([]);
+  const [plots, setPlots] = useState<Plot[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("/api/plants")
-      .then((r) => r.json())
-      .then((data) => { setPlants(data); setLoading(false); })
+    Promise.all([fetch("/api/plants"), fetch("/api/plots")])
+      .then(async ([plantsRes, plotsRes]) => {
+        if (plantsRes.ok) setPlants(await plantsRes.json());
+        if (plotsRes.ok) setPlots(await plotsRes.json());
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, []);
 
@@ -141,7 +200,10 @@ export default function HomePage() {
     <div className="flex flex-col lg:flex-row gap-8">
       <PlantBucket title="Indoor Plants" emoji="🏠" category="indoor" plants={indoor} loading={loading} />
       <div className="hidden lg:block w-px bg-stone-200" />
-      <PlantBucket title="Garden Plants" emoji="🌱" category="garden" plants={garden} loading={loading} />
+      <section className="flex-1 min-w-0">
+        <PlantBucket title="Garden Plants" emoji="🌱" category="garden" plants={garden} loading={loading} />
+        <PlotSection plots={plots} loading={loading} />
+      </section>
     </div>
   );
 }

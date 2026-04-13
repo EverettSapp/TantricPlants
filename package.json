@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "preview": "opennextjs-cloudflare preview",
-    "deploy": "rm -rf .open-next && opennextjs-cloudflare build && mv open-next.config.ts open-next.config.ts.bak && wrangler deploy; mv open-next.config.ts.bak open-next.config.ts",
+    "deploy": "chmod -R u+w .open-next 2>/dev/null; rm -rf .open-next; opennextjs-cloudflare build && mv open-next.config.ts open-next.config.ts.bak && wrangler deploy; mv open-next.config.ts.bak open-next.config.ts",
     "start": "next start",
     "lint": "eslint",
     "db:migrate:local": "wrangler d1 execute tantric-plants-db --local --file=db/schema.sql",
