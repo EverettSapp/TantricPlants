@@ -6,7 +6,7 @@ pages_build_output_dir = ".open-next/assets"
 [[d1_databases]]
 binding = "DB"
 database_name = "tantric-plants-db"
-database_id = "placeholder-replace-after-create"
+database_id = "703f753f-07a5-473f-804d-7c3a8470eec8"
 
 [[r2_buckets]]
 binding = "PHOTOS"
