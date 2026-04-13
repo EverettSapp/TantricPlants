@@ -1,0 +1,13 @@
+name = "tantric-plants"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = ".open-next/assets"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "tantric-plants-db"
+database_id = "placeholder-replace-after-create"
+
+[[r2_buckets]]
+binding = "PHOTOS"
+bucket_name = "tantric-plants-photos"
