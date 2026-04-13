@@ -5,13 +5,19 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 type Category = "indoor" | "garden";
-type GardenType = "seedling_batch" | "nursery_start" | "propagation" | "other";
+type PlantType = "seedling_batch" | "nursery_start" | "propagation" | "seed" | "indoor" | "other";
 
-const GARDEN_TYPES: { value: GardenType; label: string; description: string }[] = [
+const GARDEN_TYPES: { value: PlantType; label: string; description: string }[] = [
   { value: "seedling_batch", label: "Seedling Batch", description: "Multiple seeds started together" },
   { value: "nursery_start", label: "Nursery Start", description: "Purchased from a nursery" },
   { value: "propagation", label: "Propagation", description: "Cutting, division, or offset" },
   { value: "other", label: "Other", description: "Any other garden plant" },
+];
+
+const INDOOR_TYPES: { value: PlantType; label: string; description: string }[] = [
+  { value: "indoor", label: "Houseplant", description: "Established indoor plant" },
+  { value: "propagation", label: "Propagation", description: "Cutting, division, or offset" },
+  { value: "seed", label: "Seed Start", description: "Started from seed indoors" },
 ];
 
 function NewPlantForm() {
@@ -24,7 +30,8 @@ function NewPlantForm() {
   const [category, setCategory] = useState<Category>(initialCategory);
   const [form, setForm] = useState({
     name: "",
-    garden_type: "seedling_batch" as GardenType,
+    garden_type: "seedling_batch" as PlantType,
+    indoor_type: "indoor" as PlantType,
     batch_size: 1,
     species: "",
     variety: "",
@@ -42,7 +49,7 @@ function NewPlantForm() {
     setSubmitting(true);
     setError(null);
 
-    const type = category === "indoor" ? "indoor" : form.garden_type;
+    const type = category === "indoor" ? form.indoor_type : form.garden_type;
     const payload = {
       name: form.name,
       category,
@@ -102,18 +109,19 @@ function NewPlantForm() {
           </div>
         </div>
 
-        {/* Garden sub-type */}
-        {category === "garden" && (
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">Type</label>
-            <div className="grid grid-cols-2 gap-2">
-              {GARDEN_TYPES.map((opt) => (
+        {/* Sub-type */}
+        <div>
+          <label className="block text-sm font-medium text-stone-700 mb-2">Type</label>
+          <div className="grid grid-cols-2 gap-2">
+            {(category === "garden" ? GARDEN_TYPES : INDOOR_TYPES).map((opt) => {
+              const active = category === "garden" ? form.garden_type === opt.value : form.indoor_type === opt.value;
+              return (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => set("garden_type", opt.value)}
+                  onClick={() => set(category === "garden" ? "garden_type" : "indoor_type", opt.value)}
                   className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
-                    form.garden_type === opt.value
+                    active
                       ? "border-green-500 bg-green-50 text-green-900"
                       : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
                   }`}
@@ -121,10 +129,10 @@ function NewPlantForm() {
                   <div className="font-medium">{opt.label}</div>
                   <div className="text-xs text-stone-400 mt-0.5">{opt.description}</div>
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
-        )}
+        </div>
 
         {/* Name */}
         <div>
@@ -138,10 +146,8 @@ function NewPlantForm() {
             onChange={(e) => set("name", e.target.value)}
             placeholder={
               category === "indoor"
-                ? "e.g. Monstera, Snake Plant"
-                : form.garden_type === "seedling_batch"
-                ? "e.g. Tomatoes — Roma"
-                : "e.g. Lavender"
+                ? form.indoor_type === "seed" ? "e.g. Chilli seeds, Lemon tree" : form.indoor_type === "propagation" ? "e.g. Pothos cutting" : "e.g. Monstera, Snake Plant"
+                : form.garden_type === "seedling_batch" ? "e.g. Tomatoes — Roma" : "e.g. Lavender"
             }
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
           />
@@ -172,7 +178,7 @@ function NewPlantForm() {
         </div>
 
         {/* Batch size — seedling batches only */}
-        {category === "garden" && form.garden_type === "seedling_batch" && (
+        {form.garden_type === "seedling_batch" && category === "garden" && (
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">Number of seedlings</label>
             <input
