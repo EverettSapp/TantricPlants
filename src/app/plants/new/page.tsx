@@ -1,29 +1,33 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-type PlantType = "seedling_batch" | "nursery_start" | "propagation" | "indoor";
+type Category = "indoor" | "garden";
+type GardenType = "seedling_batch" | "nursery_start" | "propagation" | "other";
 
-const TYPE_OPTIONS: { value: PlantType; label: string; description: string }[] = [
+const GARDEN_TYPES: { value: GardenType; label: string; description: string }[] = [
   { value: "seedling_batch", label: "Seedling Batch", description: "Multiple seeds started together" },
   { value: "nursery_start", label: "Nursery Start", description: "Purchased from a nursery" },
   { value: "propagation", label: "Propagation", description: "Cutting, division, or offset" },
-  { value: "indoor", label: "Indoor Plant", description: "Houseplant or container plant" },
+  { value: "other", label: "Other", description: "Any other garden plant" },
 ];
 
-export default function NewPlantPage() {
+function NewPlantForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialCategory = (searchParams.get("category") as Category) ?? "garden";
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  const [category, setCategory] = useState<Category>(initialCategory);
   const [form, setForm] = useState({
     name: "",
-    type: "seedling_batch" as PlantType,
+    garden_type: "seedling_batch" as GardenType,
+    batch_size: 1,
     species: "",
     variety: "",
-    batch_size: 1,
     location: "",
     date_started: "",
     notes: "",
@@ -38,14 +42,17 @@ export default function NewPlantPage() {
     setSubmitting(true);
     setError(null);
 
+    const type = category === "indoor" ? "indoor" : form.garden_type;
     const payload = {
-      ...form,
+      name: form.name,
+      category,
+      type,
       species: form.species || null,
       variety: form.variety || null,
       location: form.location || null,
       date_started: form.date_started || null,
       notes: form.notes || null,
-      batch_size: form.type === "seedling_batch" ? Number(form.batch_size) : 1,
+      batch_size: type === "seedling_batch" ? Number(form.batch_size) : 1,
     };
 
     const res = await fetch("/api/plants", {
@@ -73,27 +80,51 @@ export default function NewPlantPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Type selector */}
+
+        {/* Category toggle */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">Type</label>
-          <div className="grid grid-cols-2 gap-2">
-            {TYPE_OPTIONS.map((opt) => (
+          <label className="block text-sm font-medium text-stone-700 mb-2">Category</label>
+          <div className="flex rounded-lg border border-stone-200 overflow-hidden">
+            {(["indoor", "garden"] as Category[]).map((cat) => (
               <button
-                key={opt.value}
+                key={cat}
                 type="button"
-                onClick={() => set("type", opt.value)}
-                className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
-                  form.type === opt.value
-                    ? "border-green-500 bg-green-50 text-green-900"
-                    : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                onClick={() => setCategory(cat)}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  category === cat
+                    ? "bg-green-700 text-white"
+                    : "bg-white text-stone-600 hover:bg-stone-50"
                 }`}
               >
-                <div className="font-medium">{opt.label}</div>
-                <div className="text-xs text-stone-400 mt-0.5">{opt.description}</div>
+                {cat === "indoor" ? "🏠 Indoor Plants" : "🌱 Garden Plants"}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Garden sub-type */}
+        {category === "garden" && (
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {GARDEN_TYPES.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => set("garden_type", opt.value)}
+                  className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
+                    form.garden_type === opt.value
+                      ? "border-green-500 bg-green-50 text-green-900"
+                      : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                  }`}
+                >
+                  <div className="font-medium">{opt.label}</div>
+                  <div className="text-xs text-stone-400 mt-0.5">{opt.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Name */}
         <div>
@@ -105,7 +136,13 @@ export default function NewPlantPage() {
             required
             value={form.name}
             onChange={(e) => set("name", e.target.value)}
-            placeholder={form.type === "seedling_batch" ? "e.g. Tomatoes - Roma" : "e.g. Monstera deliciosa"}
+            placeholder={
+              category === "indoor"
+                ? "e.g. Monstera, Snake Plant"
+                : form.garden_type === "seedling_batch"
+                ? "e.g. Tomatoes — Roma"
+                : "e.g. Lavender"
+            }
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
           />
         </div>
@@ -118,7 +155,7 @@ export default function NewPlantPage() {
               type="text"
               value={form.species}
               onChange={(e) => set("species", e.target.value)}
-              placeholder="e.g. Solanum lycopersicum"
+              placeholder="e.g. Monstera deliciosa"
               className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
             />
           </div>
@@ -128,14 +165,14 @@ export default function NewPlantPage() {
               type="text"
               value={form.variety}
               onChange={(e) => set("variety", e.target.value)}
-              placeholder="e.g. Roma VF"
+              placeholder="e.g. Thai Constellation"
               className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
             />
           </div>
         </div>
 
-        {/* Batch size — only for seedling batches */}
-        {form.type === "seedling_batch" && (
+        {/* Batch size — seedling batches only */}
+        {category === "garden" && form.garden_type === "seedling_batch" && (
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-1">Number of seedlings</label>
             <input
@@ -156,7 +193,7 @@ export default function NewPlantPage() {
             type="text"
             value={form.location}
             onChange={(e) => set("location", e.target.value)}
-            placeholder="e.g. South window, Greenhouse, Back garden"
+            placeholder={category === "indoor" ? "e.g. South window, Living room" : "e.g. Raised bed 2, Greenhouse"}
             className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent"
           />
         </div>
@@ -203,5 +240,13 @@ export default function NewPlantPage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NewPlantPage() {
+  return (
+    <Suspense>
+      <NewPlantForm />
+    </Suspense>
   );
 }

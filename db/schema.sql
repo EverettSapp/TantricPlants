@@ -1,8 +1,9 @@
--- Plants table (covers all types: seedling_batch, nursery_start, propagation, indoor)
+-- Plants table
 CREATE TABLE IF NOT EXISTS plants (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
-  type TEXT NOT NULL CHECK(type IN ('seedling_batch', 'nursery_start', 'propagation', 'indoor')),
+  category TEXT NOT NULL DEFAULT 'garden' CHECK(category IN ('indoor', 'garden')),
+  type TEXT NOT NULL CHECK(type IN ('seedling_batch', 'nursery_start', 'propagation', 'indoor', 'other')),
   species TEXT,
   variety TEXT,
   batch_size INTEGER DEFAULT 1, -- for seedling batches
