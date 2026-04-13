@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
-export const runtime = "edge";
-
 export async function GET(req: NextRequest) {
   const { env } = await getCloudflareContext({ async: true });
   const { searchParams } = new URL(req.url);
