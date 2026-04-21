@@ -58,8 +58,9 @@ export async function POST(req: NextRequest) {
       if (inserts.length > 0) {
         await env.DB.batch(inserts);
       }
-    } catch {
-      // Don't fail the plant creation if AI schedule generation fails
+    } catch (err) {
+      // Log but don't fail the plant creation
+      console.error("Care schedule generation failed:", err);
     }
   }
 
