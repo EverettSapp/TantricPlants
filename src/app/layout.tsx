@@ -22,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Link href="/" className="hover:text-stone-900 transition-colors">Plants</Link>
             <Link href="/care" className="hover:text-stone-900 transition-colors">Care</Link>
             <Link href="/reminders" className="hover:text-stone-900 transition-colors">Reminders</Link>
+            <Link href="/settings" className="hover:text-stone-900 transition-colors">Settings</Link>
           </nav>
           <div className="ml-auto">
             <Link

@@ -1,3 +1,5 @@
+import type { WeatherContext } from "./weather";
+
 export type CareType = "water" | "fertilize" | "mist" | "repot" | "prune";
 
 export interface SuggestedSchedule {
@@ -13,16 +15,39 @@ export interface CareScheduleResponse {
 
 export async function generateCareSchedules(
   apiKey: string,
-  plant: { name: string; species?: string | null; variety?: string | null; category: string; type: string }
+  plant: {
+    name: string;
+    species?: string | null;
+    variety?: string | null;
+    category: string;
+    type: string;
+    pot_type?: string | null;
+    inner_pot?: string | null;
+    in_decorative_pot?: boolean;
+    soil_type?: string | null;
+  },
+  weather?: WeatherContext | null
 ): Promise<CareScheduleResponse> {
   const plantDesc = [
     plant.name,
     plant.species && plant.species !== plant.name ? `(${plant.species})` : null,
-    plant.variety ? `— variety: ${plant.variety}` : null,
-    `— ${plant.category} plant`,
+    plant.variety ? `variety: ${plant.variety}` : null,
+    `${plant.category} plant`,
   ]
     .filter(Boolean)
-    .join(" ");
+    .join(", ");
+
+  const potDesc = plant.in_decorative_pot && plant.inner_pot
+    ? `${plant.inner_pot} pot inside a decorative cover pot`
+    : plant.pot_type
+    ? `${plant.pot_type} pot`
+    : null;
+
+  const contextLines = [
+    potDesc ? `Pot: ${potDesc}` : null,
+    plant.soil_type ? `Soil: ${plant.soil_type}` : null,
+    weather ? `Current conditions: ${weather.description}` : null,
+  ].filter(Boolean).join("\n");
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -37,9 +62,10 @@ export async function generateCareSchedules(
       messages: [
         {
           role: "user",
-          content: `You are a plant care expert. Given a plant, return a JSON care schedule.
+          content: `You are a plant care expert. Given a plant and its conditions, return a JSON care schedule.
 
 Plant: ${plantDesc}
+${contextLines ? `\nContext:\n${contextLines}` : ""}
 
 Return ONLY valid JSON in this exact shape (no markdown, no explanation):
 {
@@ -52,10 +78,10 @@ Return ONLY valid JSON in this exact shape (no markdown, no explanation):
 
 Rules:
 - Only include care types that apply: water, fertilize, mist, repot, prune
-- interval_days must be realistic for this specific plant
+- Adjust interval_days based on pot type (terracotta dries faster), soil type, and current weather conditions if provided
 - ai_care_note max 80 characters
 - plant_summary max 120 characters
-- Omit care types that don't apply (e.g. most plants don't need misting)`,
+- Omit care types that don't apply`,
         },
       ],
     }),
@@ -68,7 +94,6 @@ Rules:
 
   const json = await res.json() as { content: { type: string; text: string }[] };
   let text = json.content[0]?.type === "text" ? json.content[0].text : "";
-  // Strip markdown code fences if Claude wraps the response
   text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   return JSON.parse(text) as CareScheduleResponse;
 }

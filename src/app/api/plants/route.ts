@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { generateCareSchedules } from "@/lib/claude";
+import { getCurrentWeather } from "@/lib/weather";
 
 export async function GET(req: NextRequest) {
   const { env } = await getCloudflareContext({ async: true });
@@ -22,31 +23,56 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const { env } = await getCloudflareContext({ async: true });
   const body = await req.json();
-  const { name, category, type, species, variety, batch_size, location, date_started, notes } = body;
+  const { name, category, type, species, variety, batch_size, location, date_started, notes, pot_type, inner_pot, in_decorative_pot, soil_type } = body;
 
   if (!name || !type || !category) {
     return NextResponse.json({ error: "name, type, and category are required" }, { status: 400 });
   }
 
   const result = await env.DB.prepare(
-    `INSERT INTO plants (name, category, type, species, variety, batch_size, location, date_started, notes)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO plants (name, category, type, species, variety, batch_size, location, date_started, notes, pot_type, inner_pot, in_decorative_pot, soil_type)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
-    .bind(name, category, type, species ?? null, variety ?? null, batch_size ?? 1, location ?? null, date_started ?? null, notes ?? null)
+    .bind(
+      name, category, type,
+      species ?? null, variety ?? null, batch_size ?? 1,
+      location ?? null, date_started ?? null, notes ?? null,
+      pot_type ?? null, inner_pot ?? null, in_decorative_pot ? 1 : 0, soil_type ?? null
+    )
     .run();
 
   const plantId = result.meta.last_row_id;
 
-  // Generate AI care schedules in the background — don't block the response
   if (env.ANTHROPIC_API_KEY) {
     try {
-      const careData = await generateCareSchedules(env.ANTHROPIC_API_KEY, {
-        name,
-        species: species ?? null,
-        variety: variety ?? null,
-        category,
-        type,
-      });
+      // Fetch location + weather context
+      const [latRow, lngRow, cityRow] = await Promise.all([
+        env.DB.prepare("SELECT value FROM app_settings WHERE key = 'location_lat'").first<{ value: string }>(),
+        env.DB.prepare("SELECT value FROM app_settings WHERE key = 'location_lng'").first<{ value: string }>(),
+        env.DB.prepare("SELECT value FROM app_settings WHERE key = 'location_city'").first<{ value: string }>(),
+      ]);
+
+      let weather = null;
+      if (latRow && lngRow) {
+        weather = await getCurrentWeather(parseFloat(latRow.value), parseFloat(lngRow.value));
+        if (weather && cityRow) weather.city = cityRow.value;
+      }
+
+      const careData = await generateCareSchedules(
+        env.ANTHROPIC_API_KEY,
+        {
+          name,
+          species: species ?? null,
+          variety: variety ?? null,
+          category,
+          type,
+          pot_type: pot_type ?? null,
+          inner_pot: inner_pot ?? null,
+          in_decorative_pot: !!in_decorative_pot,
+          soil_type: soil_type ?? null,
+        },
+        weather
+      );
 
       const inserts = careData.schedules.map((s) =>
         env.DB.prepare(
@@ -59,7 +85,6 @@ export async function POST(req: NextRequest) {
         await env.DB.batch(inserts);
       }
     } catch (err) {
-      // Log but don't fail the plant creation
       console.error("Care schedule generation failed:", err);
     }
   }

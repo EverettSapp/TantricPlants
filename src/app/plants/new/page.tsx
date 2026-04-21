@@ -20,6 +20,28 @@ const INDOOR_TYPES: { value: PlantType; label: string; description: string }[] =
   { value: "seed", label: "Seed Start", description: "Started from seed indoors" },
 ];
 
+const POT_TYPES = [
+  { value: "terracotta", label: "Terracotta" },
+  { value: "plastic", label: "Plastic / nursery pot" },
+  { value: "ceramic_glazed", label: "Ceramic / glazed" },
+  { value: "fabric", label: "Fabric / grow bag" },
+  { value: "self_watering", label: "Self-watering" },
+  { value: "hanging_basket", label: "Hanging basket" },
+  { value: "wooden", label: "Wooden planter" },
+  { value: "other", label: "Other (type below)" },
+];
+
+const SOIL_TYPES = [
+  { value: "all_purpose", label: "All-purpose potting mix" },
+  { value: "cactus_mix", label: "Cactus & succulent mix" },
+  { value: "orchid_bark", label: "Orchid bark mix" },
+  { value: "seed_starting", label: "Seed starting mix" },
+  { value: "peat_based", label: "Peat-based mix" },
+  { value: "perlite_heavy", label: "Perlite-heavy mix" },
+  { value: "garden_soil", label: "Garden soil" },
+  { value: "other", label: "Other (type below)" },
+];
+
 function NewPlantForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -38,9 +60,15 @@ function NewPlantForm() {
     location: "",
     date_started: "",
     notes: "",
+    pot_type: "",
+    custom_pot: "",
+    in_decorative_pot: false,
+    inner_pot: "",
+    soil_type: "",
+    custom_soil: "",
   });
 
-  function set(field: string, value: string | number) {
+  function set(field: string, value: string | number | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
@@ -50,6 +78,10 @@ function NewPlantForm() {
     setError(null);
 
     const type = category === "indoor" ? form.indoor_type : form.garden_type;
+    const potType = form.pot_type === "other" ? form.custom_pot : form.pot_type;
+    const innerPot = form.in_decorative_pot ? form.inner_pot : null;
+    const soilType = form.soil_type === "other" ? form.custom_soil : form.soil_type;
+
     const payload = {
       name: form.name,
       category,
@@ -60,6 +92,10 @@ function NewPlantForm() {
       date_started: form.date_started || null,
       notes: form.notes || null,
       batch_size: type === "seedling_batch" ? Number(form.batch_size) : 1,
+      pot_type: potType || null,
+      inner_pot: innerPot || null,
+      in_decorative_pot: form.in_decorative_pot,
+      soil_type: soilType || null,
     };
 
     const res = await fetch("/api/plants", {
@@ -77,10 +113,12 @@ function NewPlantForm() {
     }
   }
 
+  const showPotFields = category === "indoor" || form.garden_type !== "seedling_batch";
+
   return (
     <div className="max-w-xl">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-stone-700 hover:text-stone-800 transition-colors">
+        <Link href="/" className="text-sm text-stone-700 hover:text-stone-900 transition-colors">
           ← All plants
         </Link>
         <h1 className="text-2xl font-semibold mt-2">Add a plant</h1>
@@ -90,7 +128,7 @@ function NewPlantForm() {
 
         {/* Category toggle */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">Category</label>
+          <label className="block text-sm font-medium text-stone-900 mb-2">Category</label>
           <div className="flex rounded-lg border border-stone-200 overflow-hidden">
             {(["indoor", "garden"] as Category[]).map((cat) => (
               <button
@@ -111,7 +149,7 @@ function NewPlantForm() {
 
         {/* Sub-type */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-2">Type</label>
+          <label className="block text-sm font-medium text-stone-900 mb-2">Type</label>
           <div className="grid grid-cols-2 gap-2">
             {(category === "garden" ? GARDEN_TYPES : INDOOR_TYPES).map((opt) => {
               const active = category === "garden" ? form.garden_type === opt.value : form.indoor_type === opt.value;
@@ -123,7 +161,7 @@ function NewPlantForm() {
                   className={`text-left px-3 py-2.5 rounded-lg border text-sm transition-all ${
                     active
                       ? "border-green-500 bg-green-50 text-green-900"
-                      : "border-stone-200 bg-white text-stone-700 hover:border-stone-300"
+                      : "border-stone-200 bg-white text-stone-900 hover:border-stone-300"
                   }`}
                 >
                   <div className="font-medium">{opt.label}</div>
@@ -136,7 +174,7 @@ function NewPlantForm() {
 
         {/* Name */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1">
+          <label className="block text-sm font-medium text-stone-900 mb-1">
             Name <span className="text-red-400">*</span>
           </label>
           <input
@@ -156,7 +194,7 @@ function NewPlantForm() {
         {/* Species + Variety */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Species</label>
+            <label className="block text-sm font-medium text-stone-900 mb-1">Species</label>
             <input
               type="text"
               value={form.species}
@@ -166,7 +204,7 @@ function NewPlantForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Variety</label>
+            <label className="block text-sm font-medium text-stone-900 mb-1">Variety</label>
             <input
               type="text"
               value={form.variety}
@@ -177,10 +215,10 @@ function NewPlantForm() {
           </div>
         </div>
 
-        {/* Batch size — seedling batches only */}
+        {/* Batch size */}
         {form.garden_type === "seedling_batch" && category === "garden" && (
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">Number of seedlings</label>
+            <label className="block text-sm font-medium text-stone-900 mb-1">Number of seedlings</label>
             <input
               type="number"
               min={1}
@@ -192,9 +230,103 @@ function NewPlantForm() {
           </div>
         )}
 
+        {/* Pot type */}
+        {showPotFields && (
+          <div>
+            <label className="block text-sm font-medium text-stone-900 mb-2">Pot type</label>
+            <div className="grid grid-cols-2 gap-2">
+              {POT_TYPES.map((p) => (
+                <button
+                  key={p.value}
+                  type="button"
+                  onClick={() => set("pot_type", p.value)}
+                  className={`text-left px-3 py-2 rounded-lg border text-sm transition-all ${
+                    form.pot_type === p.value
+                      ? "border-green-500 bg-green-50 text-green-900 font-medium"
+                      : "border-stone-200 bg-white text-stone-900 hover:border-stone-300"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            {form.pot_type === "other" && (
+              <input
+                type="text"
+                value={form.custom_pot}
+                onChange={(e) => set("custom_pot", e.target.value)}
+                placeholder="Describe your pot..."
+                className="mt-2 w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+              />
+            )}
+
+            <label className="flex items-center gap-2 mt-3 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.in_decorative_pot}
+                onChange={(e) => set("in_decorative_pot", e.target.checked)}
+                className="rounded border-stone-300 text-green-600 focus:ring-green-400"
+              />
+              <span className="text-sm text-stone-900">Inside a decorative / cover pot</span>
+            </label>
+
+            {form.in_decorative_pot && (
+              <div className="mt-3 pl-4 border-l-2 border-stone-200">
+                <label className="block text-xs font-medium text-stone-700 mb-2">Inner (functional) pot</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {POT_TYPES.filter((p) => p.value !== "other").map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => set("inner_pot", p.value)}
+                      className={`text-left px-3 py-2 rounded-lg border text-xs transition-all ${
+                        form.inner_pot === p.value
+                          ? "border-green-500 bg-green-50 text-green-900 font-medium"
+                          : "border-stone-200 bg-white text-stone-900 hover:border-stone-300"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Soil type */}
+        <div>
+          <label className="block text-sm font-medium text-stone-900 mb-2">Soil type</label>
+          <div className="grid grid-cols-2 gap-2">
+            {SOIL_TYPES.map((s) => (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => set("soil_type", s.value)}
+                className={`text-left px-3 py-2 rounded-lg border text-sm transition-all ${
+                  form.soil_type === s.value
+                    ? "border-green-500 bg-green-50 text-green-900 font-medium"
+                    : "border-stone-200 bg-white text-stone-900 hover:border-stone-300"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          {form.soil_type === "other" && (
+            <input
+              type="text"
+              value={form.custom_soil}
+              onChange={(e) => set("custom_soil", e.target.value)}
+              placeholder="Describe your soil mix..."
+              className="mt-2 w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+            />
+          )}
+        </div>
+
         {/* Location */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1">Location</label>
+          <label className="block text-sm font-medium text-stone-900 mb-1">Spot / location</label>
           <input
             type="text"
             value={form.location}
@@ -206,7 +338,7 @@ function NewPlantForm() {
 
         {/* Date started */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1">Date started</label>
+          <label className="block text-sm font-medium text-stone-900 mb-1">Date started</label>
           <input
             type="date"
             value={form.date_started}
@@ -217,7 +349,7 @@ function NewPlantForm() {
 
         {/* Notes */}
         <div>
-          <label className="block text-sm font-medium text-stone-700 mb-1">Notes</label>
+          <label className="block text-sm font-medium text-stone-900 mb-1">Notes</label>
           <textarea
             value={form.notes}
             onChange={(e) => set("notes", e.target.value)}
