@@ -10,6 +10,7 @@
     "db:migrate:remote": "wrangler d1 execute tantric-plants-db --remote --file="
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.90.0",
     "next": "^15.5.15",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
