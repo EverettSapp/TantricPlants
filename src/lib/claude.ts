@@ -67,6 +67,8 @@ Rules:
   }
 
   const json = await res.json() as { content: { type: string; text: string }[] };
-  const text = json.content[0]?.type === "text" ? json.content[0].text : "";
+  let text = json.content[0]?.type === "text" ? json.content[0].text : "";
+  // Strip markdown code fences if Claude wraps the response
+  text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
   return JSON.parse(text) as CareScheduleResponse;
 }
