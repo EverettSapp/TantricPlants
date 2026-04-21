@@ -42,5 +42,22 @@ export async function GET() {
     ORDER BY p.name ASC, cs.care_type ASC
   `).all();
 
-  return NextResponse.json({ active, suggested });
+  // Recent care logs — last 30 entries across all plants
+  const { results: recentLogs } = await env.DB.prepare(`
+    SELECT
+      cl.id,
+      cl.plant_id,
+      cl.care_type,
+      cl.notes,
+      cl.observations,
+      cl.health_status,
+      cl.logged_at,
+      p.name AS plant_name
+    FROM care_logs cl
+    JOIN plants p ON p.id = cl.plant_id
+    ORDER BY cl.logged_at DESC
+    LIMIT 30
+  `).all();
+
+  return NextResponse.json({ active, suggested, recentLogs });
 }

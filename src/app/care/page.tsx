@@ -25,11 +25,29 @@ type SuggestedItem = {
   ai_care_note: string | null;
 };
 
+type RecentLog = {
+  id: number;
+  plant_id: number;
+  plant_name: string;
+  care_type: string;
+  notes: string | null;
+  observations: string | null;
+  health_status: string | null;
+  logged_at: string;
+};
+
 type LogState = {
   scheduleId: number;
   observations: string[];
   notes: string;
   health_status: "thriving" | "good" | "stressed" | "dormant";
+};
+
+type ClockState = {
+  plantId: number;
+  plantName: string;
+  schedules: SuggestedItem[];
+  lastDone: Record<string, string>; // care_type → ISO date string
 };
 
 const CARE_ICONS: Record<string, string> = {
@@ -72,30 +90,46 @@ function dueLabel(days: number | null): { text: string; color: string } {
   return { text: `Due in ${days}d`, color: "text-stone-700" };
 }
 
-// Group suggested items by plant
 function groupByPlant(items: SuggestedItem[]): Map<number, { name: string; items: SuggestedItem[] }> {
   const map = new Map<number, { name: string; items: SuggestedItem[] }>();
   for (const item of items) {
-    if (!map.has(item.plant_id)) {
-      map.set(item.plant_id, { name: item.plant_name, items: [] });
-    }
+    if (!map.has(item.plant_id)) map.set(item.plant_id, { name: item.plant_name, items: [] });
     map.get(item.plant_id)!.items.push(item);
   }
   return map;
 }
 
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+function todayISO() {
+  return new Date().toISOString().split("T")[0];
+}
+
 export default function CareDashboard() {
   const [active, setActive] = useState<CareItem[]>([]);
   const [suggested, setSuggested] = useState<SuggestedItem[]>([]);
+  const [recentLogs, setRecentLogs] = useState<RecentLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [logState, setLogState] = useState<LogState | null>(null);
+  const [clockState, setClockState] = useState<ClockState | null>(null);
   const [submitting, setSubmitting] = useState<number | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/care");
-    const data = await res.json() as { active: CareItem[]; suggested: SuggestedItem[] };
+    const data = await res.json() as { active: CareItem[]; suggested: SuggestedItem[]; recentLogs: RecentLog[] };
     setActive(data.active);
     setSuggested(data.suggested);
+    setRecentLogs(data.recentLogs ?? []);
     setLoading(false);
   }, []);
 
@@ -125,9 +159,21 @@ export default function CareDashboard() {
     await load();
   }
 
-  async function activatePlant(plantId: number) {
-    setSubmitting(plantId * -1); // negative to avoid id collision
-    await fetch(`/api/care-schedules/${plantId}/activate`, { method: "POST" });
+  function openClockModal(plantId: number, plantName: string, items: SuggestedItem[]) {
+    const lastDone: Record<string, string> = {};
+    for (const item of items) lastDone[item.care_type] = todayISO();
+    setClockState({ plantId, plantName, schedules: items, lastDone });
+  }
+
+  async function startClock() {
+    if (!clockState) return;
+    setSubmitting(clockState.plantId * -1);
+    await fetch(`/api/care-schedules/${clockState.plantId}/activate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ last_done: clockState.lastDone }),
+    });
+    setClockState(null);
     setSubmitting(null);
     await load();
   }
@@ -143,36 +189,26 @@ export default function CareDashboard() {
 
   function toggleObs(obs: string) {
     if (!logState) return;
-    setLogState((s) =>
-      s
-        ? {
-            ...s,
-            observations: s.observations.includes(obs)
-              ? s.observations.filter((o) => o !== obs)
-              : [...s.observations, obs],
-          }
-        : s
-    );
+    setLogState((s) => s ? {
+      ...s,
+      observations: s.observations.includes(obs)
+        ? s.observations.filter((o) => o !== obs)
+        : [...s.observations, obs],
+    } : s);
   }
 
-  if (loading) {
-    return (
-      <div className="text-stone-700 text-sm py-12 text-center">Loading care schedule...</div>
-    );
-  }
+  if (loading) return <div className="text-stone-700 text-sm py-12 text-center">Loading...</div>;
 
   const grouped = groupByPlant(suggested);
-  const overdue = active.filter((i) => (daysUntil(i.next_due_at) ?? 0) < 0);
-  const today = active.filter((i) => daysUntil(i.next_due_at) === 0);
+  const overdue  = active.filter((i) => (daysUntil(i.next_due_at) ?? 0) < 0);
+  const today    = active.filter((i) => daysUntil(i.next_due_at) === 0);
   const upcoming = active.filter((i) => (daysUntil(i.next_due_at) ?? 0) > 0);
 
   return (
     <div className="max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-sm text-stone-700 hover:text-stone-800 transition-colors">
-            ← Home
-          </Link>
+          <Link href="/" className="text-sm text-stone-700 hover:text-stone-900 transition-colors">← Home</Link>
           <h1 className="text-2xl font-semibold mt-1">Care Dashboard</h1>
         </div>
         {active.length > 0 && (
@@ -185,89 +221,100 @@ export default function CareDashboard() {
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-5 space-y-4">
             <h2 className="font-semibold text-lg">Log care</h2>
-
-            {/* Observations */}
             <div>
               <p className="text-sm font-medium text-stone-800 mb-2">What did you notice?</p>
               <div className="flex flex-wrap gap-2">
                 {OBSERVATION_OPTIONS.map((o) => (
-                  <button
-                    key={o.value}
-                    type="button"
-                    onClick={() => toggleObs(o.value)}
+                  <button key={o.value} type="button" onClick={() => toggleObs(o.value)}
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
                       logState.observations.includes(o.value)
                         ? "bg-green-700 text-white border-green-700"
                         : "bg-white text-stone-800 border-stone-200 hover:border-stone-300"
                     }`}
-                  >
-                    {o.label}
-                  </button>
+                  >{o.label}</button>
                 ))}
               </div>
             </div>
-
-            {/* Plant health */}
             <div>
               <p className="text-sm font-medium text-stone-800 mb-2">Plant health</p>
               <div className="flex gap-2 flex-wrap">
                 {HEALTH_OPTIONS.map((h) => (
-                  <button
-                    key={h.value}
-                    type="button"
+                  <button key={h.value} type="button"
                     onClick={() => setLogState((s) => s ? { ...s, health_status: h.value } : s)}
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
                       logState.health_status === h.value ? h.color + " font-semibold" : "bg-white text-stone-700 border-stone-200"
                     }`}
-                  >
-                    {h.label}
-                  </button>
+                  >{h.label}</button>
                 ))}
               </div>
             </div>
-
-            {/* Notes */}
-            <div>
-              <textarea
-                value={logState.notes}
-                onChange={(e) => setLogState((s) => s ? { ...s, notes: e.target.value } : s)}
-                placeholder="Any other notes... (optional)"
-                rows={2}
-                className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
-              />
-            </div>
-
+            <textarea value={logState.notes}
+              onChange={(e) => setLogState((s) => s ? { ...s, notes: e.target.value } : s)}
+              placeholder="Any other notes... (optional)" rows={2}
+              className="w-full border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
+            />
             <div className="flex gap-3">
-              <button
-                onClick={() => submitLog(logState.scheduleId)}
-                disabled={submitting === logState.scheduleId}
+              <button onClick={() => submitLog(logState.scheduleId)} disabled={submitting === logState.scheduleId}
                 className="flex-1 bg-green-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
-              >
-                {submitting === logState.scheduleId ? "Saving..." : "Complete & Save"}
-              </button>
-              <button
-                onClick={() => setLogState(null)}
-                className="px-4 py-2 rounded-lg text-sm text-stone-800 hover:bg-stone-100"
-              >
-                Cancel
-              </button>
+              >{submitting === logState.scheduleId ? "Saving..." : "Complete & Save"}</button>
+              <button onClick={() => setLogState(null)} className="px-4 py-2 rounded-lg text-sm text-stone-800 hover:bg-stone-100">Cancel</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Active schedules */}
+      {/* Start Care Clock modal */}
+      {clockState && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-5 space-y-4">
+            <div>
+              <h2 className="font-semibold text-lg">Start Care Clock</h2>
+              <p className="text-sm text-stone-700 mt-1">
+                When did you last care for <span className="font-medium">{clockState.plantName}</span>?
+              </p>
+            </div>
+            <div className="space-y-3">
+              {clockState.schedules.map((s) => (
+                <div key={s.id} className="flex items-center gap-3">
+                  <span className="text-xl w-7 shrink-0">{CARE_ICONS[s.care_type] ?? "•"}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium capitalize">{s.care_type}</p>
+                    {s.ai_care_note && <p className="text-xs text-stone-700 truncate">{s.ai_care_note}</p>}
+                  </div>
+                  <input
+                    type="date"
+                    max={todayISO()}
+                    value={clockState.lastDone[s.care_type] ?? todayISO()}
+                    onChange={(e) => setClockState((cs) => cs ? {
+                      ...cs,
+                      lastDone: { ...cs.lastDone, [s.care_type]: e.target.value },
+                    } : cs)}
+                    className="border border-stone-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-stone-700">Leave as today if you&apos;re starting fresh. Countdowns will calculate from these dates.</p>
+            <div className="flex gap-3">
+              <button onClick={startClock} disabled={submitting === clockState.plantId * -1}
+                className="flex-1 bg-green-700 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-800 disabled:opacity-50"
+              >{submitting === clockState.plantId * -1 ? "Starting..." : "Start Care Clock"}</button>
+              <button onClick={() => setClockState(null)} className="px-4 py-2 rounded-lg text-sm text-stone-800 hover:bg-stone-100">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Empty state */}
       {active.length === 0 && suggested.length === 0 && (
         <div className="text-center py-16 text-stone-700">
           <p className="text-4xl mb-3">🌱</p>
           <p className="text-sm">No care schedules yet.</p>
-          <p className="text-sm mt-1">Add a plant to get started.</p>
-          <Link href="/plants/new" className="mt-4 inline-block text-sm text-green-700 hover:underline">
-            Add a plant →
-          </Link>
+          <Link href="/plants/new" className="mt-4 inline-block text-sm text-green-700 hover:underline">Add a plant →</Link>
         </div>
       )}
 
+      {/* Active schedules */}
       {active.length > 0 && (
         <div className="space-y-6">
           {overdue.length > 0 && (
@@ -291,7 +338,7 @@ export default function CareDashboard() {
         </div>
       )}
 
-      {/* Suggested (not yet started) */}
+      {/* Ready to start */}
       {grouped.size > 0 && (
         <div className="mt-8">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-700 mb-3">
@@ -302,16 +349,10 @@ export default function CareDashboard() {
               <div key={plantId} className="border border-stone-200 rounded-xl p-4 bg-white">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <Link
-                      href={`/plants/${plantId}`}
-                      className="font-medium text-stone-800 hover:text-green-700"
-                    >
-                      {name}
-                    </Link>
+                    <Link href={`/plants/${plantId}`} className="font-medium text-stone-800 hover:text-green-700">{name}</Link>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {items.map((item) => (
-                        <span
-                          key={item.id}
+                        <span key={item.id}
                           className="inline-flex items-center gap-1 text-xs bg-stone-100 text-stone-800 px-2 py-1 rounded-full"
                           title={item.ai_care_note ?? ""}
                         >
@@ -321,11 +362,11 @@ export default function CareDashboard() {
                     </div>
                   </div>
                   <button
-                    onClick={() => activatePlant(plantId)}
+                    onClick={() => openClockModal(plantId, name, items)}
                     disabled={submitting === plantId * -1}
                     className="shrink-0 bg-green-700 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-green-800 disabled:opacity-50 whitespace-nowrap"
                   >
-                    {submitting === plantId * -1 ? "Starting..." : "Start Care Clock"}
+                    Start Care Clock
                   </button>
                 </div>
               </div>
@@ -333,16 +374,54 @@ export default function CareDashboard() {
           </div>
         </div>
       )}
+
+      {/* Care history */}
+      {recentLogs.length > 0 && (
+        <div className="mt-8">
+          <button
+            onClick={() => setHistoryOpen((v) => !v)}
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-stone-700 mb-3 hover:text-stone-900"
+          >
+            <span>Care History</span>
+            <span>{historyOpen ? "▲" : "▼"}</span>
+          </button>
+          {historyOpen && (
+            <div className="space-y-2">
+              {recentLogs.map((log) => {
+                const obs: string[] = log.observations ? JSON.parse(log.observations) : [];
+                return (
+                  <div key={log.id} className="flex items-start gap-3 bg-white border border-stone-200 rounded-xl px-4 py-3 text-sm">
+                    <span className="text-lg leading-none mt-0.5">{CARE_ICONS[log.care_type] ?? "📝"}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2 flex-wrap">
+                        <Link href={`/plants/${log.plant_id}`} className="font-medium hover:text-green-700">{log.plant_name}</Link>
+                        <span className="text-xs text-stone-700 capitalize">{log.care_type}</span>
+                        {log.health_status && (
+                          <span className="text-xs text-stone-700 capitalize">· {log.health_status}</span>
+                        )}
+                      </div>
+                      {obs.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {obs.map((o) => (
+                            <span key={o} className="text-xs bg-stone-100 text-stone-700 px-2 py-0.5 rounded-full">{o.replace(/_/g, " ")}</span>
+                          ))}
+                        </div>
+                      )}
+                      {log.notes && <p className="text-xs text-stone-700 mt-0.5">{log.notes}</p>}
+                    </div>
+                    <span className="text-xs text-stone-700 shrink-0">{timeAgo(log.logged_at)}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
-function CareList({
-  items,
-  submitting,
-  onComplete,
-  onLog,
-}: {
+function CareList({ items, submitting, onComplete, onLog }: {
   items: CareItem[];
   submitting: number | null;
   onComplete: (id: number) => void;
@@ -354,37 +433,20 @@ function CareList({
         const days = daysUntil(item.next_due_at);
         const due = dueLabel(days);
         return (
-          <div
-            key={item.id}
-            className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 py-3"
-          >
+          <div key={item.id} className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl px-4 py-3">
             <span className="text-xl">{CARE_ICONS[item.care_type] ?? "•"}</span>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline gap-2 flex-wrap">
-                <Link
-                  href={`/plants/${item.plant_id}`}
-                  className="font-medium text-stone-800 hover:text-green-700 truncate"
-                >
-                  {item.plant_name}
-                </Link>
+                <Link href={`/plants/${item.plant_id}`} className="font-medium text-stone-800 hover:text-green-700 truncate">{item.plant_name}</Link>
                 <span className="text-xs text-stone-700 capitalize">{item.care_type}</span>
               </div>
               <p className={`text-xs mt-0.5 ${due.color}`}>{due.text}</p>
             </div>
             <div className="flex gap-2 shrink-0">
-              <button
-                onClick={() => onLog(item)}
-                className="text-xs px-3 py-1.5 border border-stone-200 rounded-lg text-stone-800 hover:bg-stone-50"
-              >
-                Log
-              </button>
-              <button
-                onClick={() => onComplete(item.id)}
-                disabled={submitting === item.id}
+              <button onClick={() => onLog(item)} className="text-xs px-3 py-1.5 border border-stone-200 rounded-lg text-stone-800 hover:bg-stone-50">Log</button>
+              <button onClick={() => onComplete(item.id)} disabled={submitting === item.id}
                 className="text-xs px-3 py-1.5 bg-green-700 text-white rounded-lg hover:bg-green-800 disabled:opacity-50"
-              >
-                {submitting === item.id ? "..." : "Done"}
-              </button>
+              >{submitting === item.id ? "..." : "Done"}</button>
             </div>
           </div>
         );
