@@ -65,11 +65,11 @@ function daysUntil(dateStr: string | null): number | null {
 }
 
 function dueLabel(days: number | null): { text: string; color: string } {
-  if (days === null) return { text: "No schedule", color: "text-stone-400" };
+  if (days === null) return { text: "No schedule", color: "text-stone-700" };
   if (days < 0) return { text: `${Math.abs(days)}d overdue`, color: "text-red-600 font-semibold" };
   if (days === 0) return { text: "Due today", color: "text-amber-600 font-semibold" };
   if (days === 1) return { text: "Due tomorrow", color: "text-amber-500" };
-  return { text: `Due in ${days}d`, color: "text-stone-500" };
+  return { text: `Due in ${days}d`, color: "text-stone-700" };
 }
 
 // Group suggested items by plant
@@ -157,7 +157,7 @@ export default function CareDashboard() {
 
   if (loading) {
     return (
-      <div className="text-stone-400 text-sm py-12 text-center">Loading care schedule...</div>
+      <div className="text-stone-700 text-sm py-12 text-center">Loading care schedule...</div>
     );
   }
 
@@ -170,13 +170,13 @@ export default function CareDashboard() {
     <div className="max-w-2xl">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <Link href="/" className="text-sm text-stone-400 hover:text-stone-600 transition-colors">
+          <Link href="/" className="text-sm text-stone-700 hover:text-stone-800 transition-colors">
             ← Home
           </Link>
           <h1 className="text-2xl font-semibold mt-1">Care Dashboard</h1>
         </div>
         {active.length > 0 && (
-          <span className="text-sm text-stone-400">{active.length} active schedule{active.length !== 1 ? "s" : ""}</span>
+          <span className="text-sm text-stone-700">{active.length} active schedule{active.length !== 1 ? "s" : ""}</span>
         )}
       </div>
 
@@ -188,7 +188,7 @@ export default function CareDashboard() {
 
             {/* Observations */}
             <div>
-              <p className="text-sm font-medium text-stone-600 mb-2">What did you notice?</p>
+              <p className="text-sm font-medium text-stone-800 mb-2">What did you notice?</p>
               <div className="flex flex-wrap gap-2">
                 {OBSERVATION_OPTIONS.map((o) => (
                   <button
@@ -198,7 +198,7 @@ export default function CareDashboard() {
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
                       logState.observations.includes(o.value)
                         ? "bg-green-700 text-white border-green-700"
-                        : "bg-white text-stone-600 border-stone-200 hover:border-stone-300"
+                        : "bg-white text-stone-800 border-stone-200 hover:border-stone-300"
                     }`}
                   >
                     {o.label}
@@ -209,7 +209,7 @@ export default function CareDashboard() {
 
             {/* Plant health */}
             <div>
-              <p className="text-sm font-medium text-stone-600 mb-2">Plant health</p>
+              <p className="text-sm font-medium text-stone-800 mb-2">Plant health</p>
               <div className="flex gap-2 flex-wrap">
                 {HEALTH_OPTIONS.map((h) => (
                   <button
@@ -217,7 +217,7 @@ export default function CareDashboard() {
                     type="button"
                     onClick={() => setLogState((s) => s ? { ...s, health_status: h.value } : s)}
                     className={`px-3 py-1.5 rounded-full text-xs border transition-all ${
-                      logState.health_status === h.value ? h.color + " font-semibold" : "bg-white text-stone-500 border-stone-200"
+                      logState.health_status === h.value ? h.color + " font-semibold" : "bg-white text-stone-700 border-stone-200"
                     }`}
                   >
                     {h.label}
@@ -247,7 +247,7 @@ export default function CareDashboard() {
               </button>
               <button
                 onClick={() => setLogState(null)}
-                className="px-4 py-2 rounded-lg text-sm text-stone-600 hover:bg-stone-100"
+                className="px-4 py-2 rounded-lg text-sm text-stone-800 hover:bg-stone-100"
               >
                 Cancel
               </button>
@@ -258,7 +258,7 @@ export default function CareDashboard() {
 
       {/* Active schedules */}
       {active.length === 0 && suggested.length === 0 && (
-        <div className="text-center py-16 text-stone-400">
+        <div className="text-center py-16 text-stone-700">
           <p className="text-4xl mb-3">🌱</p>
           <p className="text-sm">No care schedules yet.</p>
           <p className="text-sm mt-1">Add a plant to get started.</p>
@@ -284,7 +284,7 @@ export default function CareDashboard() {
           )}
           {upcoming.length > 0 && (
             <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-2">Upcoming</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-700 mb-2">Upcoming</h2>
               <CareList items={upcoming} submitting={submitting} onComplete={quickComplete} onLog={openLog} />
             </section>
           )}
@@ -294,7 +294,7 @@ export default function CareDashboard() {
       {/* Suggested (not yet started) */}
       {grouped.size > 0 && (
         <div className="mt-8">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-400 mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-stone-700 mb-3">
             Ready to start — {grouped.size} plant{grouped.size !== 1 ? "s" : ""}
           </h2>
           <div className="space-y-3">
@@ -312,7 +312,7 @@ export default function CareDashboard() {
                       {items.map((item) => (
                         <span
                           key={item.id}
-                          className="inline-flex items-center gap-1 text-xs bg-stone-100 text-stone-600 px-2 py-1 rounded-full"
+                          className="inline-flex items-center gap-1 text-xs bg-stone-100 text-stone-800 px-2 py-1 rounded-full"
                           title={item.ai_care_note ?? ""}
                         >
                           {CARE_ICONS[item.care_type] ?? "•"} {item.care_type} every {item.interval_days}d
@@ -367,14 +367,14 @@ function CareList({
                 >
                   {item.plant_name}
                 </Link>
-                <span className="text-xs text-stone-400 capitalize">{item.care_type}</span>
+                <span className="text-xs text-stone-700 capitalize">{item.care_type}</span>
               </div>
               <p className={`text-xs mt-0.5 ${due.color}`}>{due.text}</p>
             </div>
             <div className="flex gap-2 shrink-0">
               <button
                 onClick={() => onLog(item)}
-                className="text-xs px-3 py-1.5 border border-stone-200 rounded-lg text-stone-600 hover:bg-stone-50"
+                className="text-xs px-3 py-1.5 border border-stone-200 rounded-lg text-stone-800 hover:bg-stone-50"
               >
                 Log
               </button>

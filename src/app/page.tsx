@@ -35,7 +35,7 @@ function PlantCard({ plant }: { plant: Plant }) {
             {plant.name}
           </p>
           {(plant.species || plant.variety) && (
-            <p className="text-xs text-stone-400 italic truncate mt-0.5">
+            <p className="text-xs text-stone-700 italic truncate mt-0.5">
               {[plant.species, plant.variety].filter(Boolean).join(" · ")}
             </p>
           )}
@@ -47,10 +47,10 @@ function PlantCard({ plant }: { plant: Plant }) {
         )}
       </div>
       {plant.location && (
-        <p className="text-xs text-stone-400 mt-2">📍 {plant.location}</p>
+        <p className="text-xs text-stone-700 mt-2">📍 {plant.location}</p>
       )}
       {plant.date_started && (
-        <p className="text-xs text-stone-400 mt-1">
+        <p className="text-xs text-stone-700 mt-1">
           Started{" "}
           {new Date(plant.date_started).toLocaleDateString("en-US", {
             month: "short", day: "numeric", year: "numeric",
@@ -87,7 +87,7 @@ function PlantBucket({
             {emoji} {title}
           </h2>
           {!loading && (
-            <p className="text-xs text-stone-400 mt-0.5">
+            <p className="text-xs text-stone-700 mt-0.5">
               {plants.length} {plants.length === 1 ? "entry" : "entries"}
               {category === "garden" && totalCount !== plants.length && ` · ${totalCount} plants`}
             </p>
@@ -102,9 +102,9 @@ function PlantBucket({
       </div>
 
       {loading ? (
-        <div className="text-stone-400 text-sm">Loading...</div>
+        <div className="text-stone-700 text-sm">Loading...</div>
       ) : plants.length === 0 ? (
-        <div className="border-2 border-dashed border-stone-200 rounded-xl p-8 text-center text-stone-400">
+        <div className="border-2 border-dashed border-stone-200 rounded-xl p-8 text-center text-stone-700">
           <p className="text-3xl mb-2">{emoji}</p>
           <p className="text-sm">No {title.toLowerCase()} yet</p>
           <Link
@@ -141,13 +141,13 @@ function PlotSection({ plots, loading }: { plots: Plot[]; loading: boolean }) {
   return (
     <div className="mt-6 pt-6 border-t border-stone-200">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-stone-500 uppercase tracking-wider">Plots & Trays</h3>
+        <h3 className="text-sm font-semibold text-stone-700 uppercase tracking-wider">Plots & Trays</h3>
         <Link href="/plots/new" className="text-xs text-green-700 hover:underline">+ Add plot</Link>
       </div>
       {loading ? (
-        <div className="text-stone-400 text-sm">Loading...</div>
+        <div className="text-stone-700 text-sm">Loading...</div>
       ) : plots.length === 0 ? (
-        <Link href="/plots/new" className="block border-2 border-dashed border-stone-200 rounded-xl p-4 text-center text-stone-400 hover:border-green-300 transition-colors">
+        <Link href="/plots/new" className="block border-2 border-dashed border-stone-200 rounded-xl p-4 text-center text-stone-700 hover:border-green-300 transition-colors">
           <p className="text-2xl mb-1">🗺️</p>
           <p className="text-xs">Plan your garden — add a tray or bed</p>
         </Link>
@@ -161,7 +161,7 @@ function PlotSection({ plots, loading }: { plots: Plot[]; loading: boolean }) {
                 <span className="text-lg">{PLOT_ICONS[p.plot_type]}</span>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate group-hover:text-green-800">{p.name}</p>
-                  <p className="text-xs text-stone-400">
+                  <p className="text-xs text-stone-700">
                     {PLOT_LABELS[p.plot_type]}
                     {p.plot_type === "seeding_tray" && p.tray_rows && p.tray_cols &&
                       ` · ${p.tray_rows * p.tray_cols} cells`}

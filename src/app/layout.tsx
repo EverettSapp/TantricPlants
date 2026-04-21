@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Link href="/" className="text-lg font-semibold text-green-700 tracking-tight">
             🌱 TantricPlants
           </Link>
-          <nav className="flex gap-4 text-sm text-stone-500">
+          <nav className="flex gap-4 text-sm text-stone-700">
             <Link href="/" className="hover:text-stone-900 transition-colors">Plants</Link>
             <Link href="/care" className="hover:text-stone-900 transition-colors">Care</Link>
             <Link href="/reminders" className="hover:text-stone-900 transition-colors">Reminders</Link>

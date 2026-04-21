@@ -80,7 +80,7 @@ function NewPlantForm() {
   return (
     <div className="max-w-xl">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-stone-400 hover:text-stone-600 transition-colors">
+        <Link href="/" className="text-sm text-stone-700 hover:text-stone-800 transition-colors">
           ← All plants
         </Link>
         <h1 className="text-2xl font-semibold mt-2">Add a plant</h1>
@@ -100,7 +100,7 @@ function NewPlantForm() {
                 className={`flex-1 py-2 text-sm font-medium transition-colors ${
                   category === cat
                     ? "bg-green-700 text-white"
-                    : "bg-white text-stone-600 hover:bg-stone-50"
+                    : "bg-white text-stone-800 hover:bg-stone-50"
                 }`}
               >
                 {cat === "indoor" ? "🏠 Indoor Plants" : "🌱 Garden Plants"}
@@ -127,7 +127,7 @@ function NewPlantForm() {
                   }`}
                 >
                   <div className="font-medium">{opt.label}</div>
-                  <div className="text-xs text-stone-400 mt-0.5">{opt.description}</div>
+                  <div className="text-xs text-stone-700 mt-0.5">{opt.description}</div>
                 </button>
               );
             })}
@@ -239,7 +239,7 @@ function NewPlantForm() {
           </button>
           <Link
             href="/"
-            className="px-5 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors"
+            className="px-5 py-2 rounded-lg text-sm font-medium text-stone-800 hover:bg-stone-100 transition-colors"
           >
             Cancel
           </Link>

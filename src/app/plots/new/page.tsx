@@ -107,7 +107,7 @@ export default function NewPlotPage() {
   return (
     <div className="max-w-xl">
       <div className="mb-6">
-        <Link href="/" className="text-sm text-stone-400 hover:text-stone-600 transition-colors">← Garden</Link>
+        <Link href="/" className="text-sm text-stone-700 hover:text-stone-800 transition-colors">← Garden</Link>
         <h1 className="text-2xl font-semibold mt-2">Add a plot</h1>
       </div>
 
@@ -132,7 +132,7 @@ export default function NewPlotPage() {
                 }`}
               >
                 <div className="font-medium">{opt.label}</div>
-                <div className="text-xs text-stone-400 mt-0.5">{opt.desc}</div>
+                <div className="text-xs text-stone-700 mt-0.5">{opt.desc}</div>
               </button>
             ))}
           </div>
@@ -171,7 +171,7 @@ export default function NewPlotPage() {
                     className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
                       trayPreset === p.label
                         ? "border-green-500 bg-green-50 text-green-800"
-                        : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
+                        : "border-stone-200 bg-white text-stone-800 hover:border-stone-300"
                     }`}
                   >
                     {p.label}
@@ -201,7 +201,7 @@ export default function NewPlotPage() {
                 </div>
               </div>
             )}
-            <p className="text-xs text-stone-400">{cellCount} cells total</p>
+            <p className="text-xs text-stone-700">{cellCount} cells total</p>
           </>
         )}
 
@@ -218,7 +218,7 @@ export default function NewPlotPage() {
                   placeholder="Length"
                   className="flex-1 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
-                <span className="text-stone-400 text-sm">×</span>
+                <span className="text-stone-700 text-sm">×</span>
                 <input
                   type="number" min={0} step={0.5}
                   value={form.width_ft}
@@ -226,10 +226,10 @@ export default function NewPlotPage() {
                   placeholder="Width"
                   className="flex-1 border border-stone-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
                 />
-                <span className="text-stone-400 text-sm">ft</span>
+                <span className="text-stone-700 text-sm">ft</span>
               </div>
               {form.length_ft && form.width_ft && (
-                <p className="text-xs text-stone-400 mt-1">
+                <p className="text-xs text-stone-700 mt-1">
                   {(Number(form.length_ft) * Number(form.width_ft)).toFixed(1)} sq ft
                   {" · "}{Math.round(Number(form.length_ft) * Number(form.width_ft))} planting squares
                 </p>
@@ -248,7 +248,7 @@ export default function NewPlotPage() {
                       className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
                         Number(form.height_in) === h
                           ? "border-green-500 bg-green-50 text-green-800"
-                          : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
+                          : "border-stone-200 bg-white text-stone-800 hover:border-stone-300"
                       }`}
                     >
                       {h}&quot;
@@ -280,7 +280,7 @@ export default function NewPlotPage() {
                     }`}
                   >
                     <div className="font-medium">{opt.label}</div>
-                    <div className="text-xs text-stone-400">{opt.desc}</div>
+                    <div className="text-xs text-stone-700">{opt.desc}</div>
                   </button>
                 ))}
               </div>
@@ -297,7 +297,7 @@ export default function NewPlotPage() {
                     className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
                       form.soil_type === opt.value
                         ? "border-green-500 bg-green-50 text-green-800"
-                        : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
+                        : "border-stone-200 bg-white text-stone-800 hover:border-stone-300"
                     }`}
                   >
                     {opt.label}
@@ -320,7 +320,7 @@ export default function NewPlotPage() {
                     form.irrigation ? "translate-x-6" : "translate-x-1"
                   }`} />
                 </button>
-                <span className="text-sm text-stone-600">{form.irrigation ? "Yes" : "No irrigation"}</span>
+                <span className="text-sm text-stone-800">{form.irrigation ? "Yes" : "No irrigation"}</span>
               </div>
               {form.irrigation && (
                 <div className="flex flex-wrap gap-2">
@@ -332,7 +332,7 @@ export default function NewPlotPage() {
                       className={`px-3 py-1.5 rounded-lg border text-sm font-medium transition-all ${
                         form.irrigation_type === opt.value
                           ? "border-green-500 bg-green-50 text-green-800"
-                          : "border-stone-200 bg-white text-stone-600 hover:border-stone-300"
+                          : "border-stone-200 bg-white text-stone-800 hover:border-stone-300"
                       }`}
                     >
                       {opt.label}
@@ -363,7 +363,7 @@ export default function NewPlotPage() {
           >
             {submitting ? "Creating..." : "Create plot"}
           </button>
-          <Link href="/" className="px-5 py-2 rounded-lg text-sm font-medium text-stone-600 hover:bg-stone-100 transition-colors">
+          <Link href="/" className="px-5 py-2 rounded-lg text-sm font-medium text-stone-800 hover:bg-stone-100 transition-colors">
             Cancel
           </Link>
         </div>

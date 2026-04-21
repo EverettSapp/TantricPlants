@@ -120,7 +120,7 @@ export default function PlotPage() {
     router.push("/");
   }
 
-  if (loading) return <div className="text-stone-400 text-sm">Loading...</div>;
+  if (loading) return <div className="text-stone-700 text-sm">Loading...</div>;
   if (!plot) return <div>Plot not found. <Link href="/" className="underline">Go back</Link></div>;
 
   const isTray = plot.plot_type === "seeding_tray";
@@ -138,11 +138,11 @@ export default function PlotPage() {
   return (
     <div>
       <div className="mb-5">
-        <Link href="/" className="text-sm text-stone-400 hover:text-stone-600 transition-colors">← Garden</Link>
+        <Link href="/" className="text-sm text-stone-700 hover:text-stone-800 transition-colors">← Garden</Link>
         <div className="flex items-start justify-between mt-2 gap-4">
           <div>
             <h1 className="text-2xl font-semibold">{plot.name}</h1>
-            <p className="text-sm text-stone-400 mt-0.5">
+            <p className="text-sm text-stone-700 mt-0.5">
               {plot.plot_type === "seeding_tray" && `Seeding tray · ${totalCells} cells · ${filledCells} planted`}
               {plot.plot_type === "raised_bed" && `Raised bed${plot.height_in ? ` · ${plot.height_in}"` : ""} · ${plot.length_ft ?? "?"}×${plot.width_ft ?? "?"} ft`}
               {plot.plot_type === "in_ground" && `In-ground · ${plot.length_ft ?? "?"}×${plot.width_ft ?? "?"} ft`}
@@ -160,16 +160,16 @@ export default function PlotPage() {
       {/* Bed details */}
       {!isTray && (
         <div className="bg-white border border-stone-200 rounded-xl p-4 mb-5 flex flex-wrap gap-4 text-sm">
-          {plot.sun_exposure && <div><span className="text-stone-400">Sun </span><span className="font-medium">{SUN_LABELS[plot.sun_exposure] ?? plot.sun_exposure}</span></div>}
-          {plot.soil_type && <div><span className="text-stone-400">Soil </span><span className="font-medium">{SOIL_LABELS[plot.soil_type] ?? plot.soil_type}</span></div>}
-          {plot.irrigation ? <div><span className="text-stone-400">Irrigation </span><span className="font-medium capitalize">{plot.irrigation_type ?? "yes"}</span></div> : null}
-          {plot.notes && <div className="w-full text-stone-500">{plot.notes}</div>}
+          {plot.sun_exposure && <div><span className="text-stone-700">Sun </span><span className="font-medium">{SUN_LABELS[plot.sun_exposure] ?? plot.sun_exposure}</span></div>}
+          {plot.soil_type && <div><span className="text-stone-700">Soil </span><span className="font-medium">{SOIL_LABELS[plot.soil_type] ?? plot.soil_type}</span></div>}
+          {plot.irrigation ? <div><span className="text-stone-700">Irrigation </span><span className="font-medium capitalize">{plot.irrigation_type ?? "yes"}</span></div> : null}
+          {plot.notes && <div className="w-full text-stone-700">{plot.notes}</div>}
         </div>
       )}
 
       {/* Grid */}
       <div className="bg-white border border-stone-200 rounded-xl p-4 mb-5 overflow-x-auto">
-        <p className="text-xs text-stone-400 mb-3">Click a cell to assign a plant</p>
+        <p className="text-xs text-stone-700 mb-3">Click a cell to assign a plant</p>
         <div
           className="grid gap-1 w-fit"
           style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
@@ -180,7 +180,7 @@ export default function PlotPage() {
               const isSelected = selected?.row === r && selected?.col === c;
               const colorClass = cell?.plant_id != null
                 ? CELL_COLORS[colorMap[cell.plant_id] ?? 0]
-                : "bg-stone-100 border-stone-200 text-stone-400";
+                : "bg-stone-100 border-stone-200 text-stone-700";
 
               const cellLabel = cell?.plant_name
                 ? cell.plant_name.length > 6 ? cell.plant_name.slice(0, 5) + "…" : cell.plant_name
@@ -212,7 +212,7 @@ export default function PlotPage() {
             <p className="text-sm font-medium text-stone-700">
               {isTray ? `Row ${selected.row + 1}, Cell ${selected.col + 1}` : `Square (${selected.row + 1}, ${selected.col + 1})`}
             </p>
-            <button onClick={() => setSelected(null)} className="text-stone-400 hover:text-stone-600 text-sm">✕</button>
+            <button onClick={() => setSelected(null)} className="text-stone-700 hover:text-stone-800 text-sm">✕</button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
@@ -224,7 +224,7 @@ export default function PlotPage() {
                 className="text-left px-2.5 py-2 rounded-lg border border-stone-200 text-xs hover:border-green-400 hover:bg-green-50 transition-all disabled:opacity-50"
               >
                 <div className="font-medium truncate">{p.name}</div>
-                {p.variety && <div className="text-stone-400 truncate">{p.variety}</div>}
+                {p.variety && <div className="text-stone-700 truncate">{p.variety}</div>}
               </button>
             ))}
           </div>
@@ -244,12 +244,12 @@ export default function PlotPage() {
       {/* Legend */}
       {legend.length > 0 && (
         <div>
-          <h2 className="text-xs font-semibold text-stone-400 uppercase tracking-wider mb-2">Legend</h2>
+          <h2 className="text-xs font-semibold text-stone-700 uppercase tracking-wider mb-2">Legend</h2>
           <div className="flex flex-wrap gap-2">
             {legend.map((l) => (
               <div key={l.plant_id} className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-medium ${CELL_COLORS[l.colorIdx]}`}>
                 {l.name}
-                <span className="text-stone-400 font-normal">
+                <span className="text-stone-700 font-normal">
                   ×{cells.filter((c) => c.plant_id === l.plant_id).length}
                 </span>
               </div>
